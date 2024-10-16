@@ -1,0 +1,25 @@
+{
+  "name": "genprompt",
+  "description": "Describe your project here",
+  "technologies": [
+    "commander",
+    "fast-glob",
+    "inquirer",
+    "lz-string",
+    "ts-morph",
+    "@types/inquirer",
+    "@types/node",
+    "ts-node",
+    "typescript"
+  ],
+  "includeTypes": true,
+  "includeFiles": true,
+  "compress": false,
+  "include": [
+    "package.json",
+    "prisma/schema.prisma",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "projectRoot": "./"
+}
