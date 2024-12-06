@@ -12,6 +12,7 @@ import {
   createConfig,
   copyToClipboard,
   promptForQuestion,
+  summarizeComponentProps,
 } from './utils.js';
 
 const program = new Command();
@@ -117,6 +118,33 @@ program
     const config = await createConfig(!options.yes);
     await writeFile(configPath, JSON.stringify(config, null, 2));
     console.log(`Created initial .genprompt.json at ${configPath}`);
+  });
+
+  program
+  .command("summarize-props")
+  .description("Summarize props for React components")
+  .option("-f, --files <patterns...>", "Glob patterns for files to analyze")
+  .option("-d, --depth <number>", "Maximum depth to resolve nested types", 2)
+  .option("-o, --output <path>", "Output file (default: stdout)")
+  .action(async (options) => {
+    const { files, depth, output } = options;
+
+    if (!files || files.length === 0) {
+      console.error("Error: No file patterns provided.");
+      process.exit(1);
+    }
+
+    try {
+      const summary = await summarizeComponentProps(files, parseInt(depth, 10));
+      if (output) {
+        await writeFile(output, summary);
+        console.log(`Props summary written to ${output}`);
+      } else {
+        console.log(summary);
+      }
+    } catch (error) {
+      console.error("Error during props summary generation:", error.message);
+    }
   });
 
 program.parse(process.argv);

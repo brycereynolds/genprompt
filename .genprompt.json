@@ -1,6 +1,6 @@
 {
   "name": "genprompt",
-  "description": "Describe your project here",
+  "description": "Generate a prompt file based on project context",
   "technologies": [
     "clipboardy",
     "commander",
@@ -11,9 +11,12 @@
   ],
   "includeTypes": true,
   "includeFiles": true,
-  "compress": false,
+  "compress": true,
   "include": [
-    "package.json"
+    "package.json",
+    "analyzeProps.js",
+    "utils.js",
+    "index.js"
   ],
   "projectRoot": "./"
 }

@@ -7,6 +7,8 @@ import * as path from 'path';
 import { Project } from 'ts-morph';
 import inquirer from 'inquirer';
 import { promises as fs } from 'fs';
+import { analyzeComponentProps } from "./analyzeProps.js";
+
 
 /**
  * @typedef {Object} Config
@@ -81,7 +83,6 @@ export async function includeTypes(projectRoot) {
       skipAddingFilesFromTsConfig: false,
     });
   } catch {
-    // tsconfig.json does not exist
     console.warn(`Warning: tsconfig.json not found at ${tsConfigPath}. Attempting to include all .ts files in the project.`);
     project = new Project();
 
@@ -96,7 +97,6 @@ export async function includeTypes(projectRoot) {
       return ''; // Return empty content
     }
 
-    // Add source files to the project
     tsFiles.forEach((file) => {
       project.addSourceFileAtPath(path.join(projectRoot, file));
     });
@@ -142,10 +142,10 @@ export function compressContent(content) {
   let compressedContent = content.replace(/\s+/g, ' ');
 
   // Optionally, remove single-line comments (e.g., // comment)
-  compressedContent = compressedContent.replace(/\/\/.*(?=[\n\r])/g, '');
+  // compressedContent = compressedContent.replace(/\/\/.*(?=[\n\r])/g, '');
 
   // Optionally, remove multi-line comments (e.g., /* comment */)
-  compressedContent = compressedContent.replace(/\/\*[\s\S]*?\*\//g, '');
+  // compressedContent = compressedContent.replace(/\/\*[\s\S]*?\*\//g, '');
 
   // Trim leading and trailing whitespace
   compressedContent = compressedContent.trim();
@@ -163,7 +163,6 @@ export async function promptForQuestion(editor) {
   if (!editor) {
     const defaultEditor = process.env.EDITOR || process.env.VISUAL || 'vim';
 
-    // Ask the user which editor to use, defaulting to the environment variable or 'vim'
     const response = await inquirer.prompt([
       {
         type: 'input',
@@ -178,11 +177,13 @@ export async function promptForQuestion(editor) {
     editor = response.editor;
   }
 
-  // Inform the user that the editor will open
+  // Set the EDITOR environment variable to the specified editor
+  // this is necessary for the editor to open correctly with inquirer
+  process.env.EDITOR = editor;
+
   console.log(`\nOpening ${editor}...`);
   console.log('Please type your question. Save and close the editor when you are finished.\n');
 
-  // Now prompt for the question using the specified editor
   try {
     const { question } = await inquirer.prompt([
       {
@@ -324,4 +325,34 @@ export async function createConfig(interactive) {
  */
 export async function copyToClipboard(content) {
   await clipboardy.write(content);
+}
+
+/**
+ * Analyze React components and summarize their props.
+ * @param {string[]} filePatterns - Glob patterns to match files.
+ * @param {number} maxDepth - Maximum depth to resolve nested types.
+ * @returns {Promise<string>} Summarized props for each component.
+ */
+export async function summarizeComponentProps(filePatterns, maxDepth = 2) {
+  const files = await fg(filePatterns);
+
+  for (const file of files) {
+    try {
+      const { result, skippedCount } = await analyzeComponentProps(file, maxDepth);
+
+      // Log the results directly to the console
+      console.log(`--------  ${file} --------`);
+      if (Object.keys(result).length > 0) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log('No valid props found.');
+      }
+      if (skippedCount > 0) {
+        console.log(`Skipped ${skippedCount} exports in this file.`);
+      }
+      console.log(`-------- EOF --------\n`);
+    } catch (error) {
+      console.error(`Error processing file "${file}": ${error.message}`);
+    }
+  }
 }
